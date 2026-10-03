@@ -1,0 +1,26 @@
+# The hello-world job: one serverless notebook task that installs your arxiv_curator wheel,
+# loads project_config.yml and writes one row to the hello table in your course schema.
+# It runs as whoever deploys the bundle; your deploy principal does that from GitHub Actions.
+resources:
+  jobs:
+    hello:
+      name: job-hello-victor-bot-1
+      budget_policy_id: "2b379ae0-d42c-352c-923a-b63d6ba6bf3e"
+      environments:
+        - environment_key: default
+          spec:
+            environment_version: "6"
+            dependencies:
+              - ../dist/*.whl
+
+      tasks:
+        - task_key: hello
+          environment_key: default
+          notebook_task:
+            notebook_path: deployment_notebooks/hello.py
+            base_parameters:
+              env: ${bundle.target}
+
+      permissions:
+        - level: CAN_MANAGE
+          user_name: "victor-bot-1@cauchy.io"

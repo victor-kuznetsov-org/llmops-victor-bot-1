@@ -1,0 +1,49 @@
+# Deploys this repo's bundle to the course workspace on every push to main, as your own deploy
+# principal sp-deploy-victor-bot-1.
+#
+# There is no secret anywhere: GitHub gives the run an OpenID Connect token for main of this repo,
+# and Databricks exchanges it for the principal's token, because the principal's federation policy
+# trusts exactly that. DATABRICKS_CLIENT_ID, the principal's application id, is a repository
+# variable the course's onboarding writes; it is not a secret. The hello job runs as the principal,
+# which deployed it, with your usage policy, and you hold CAN_MANAGE on it.
+# Actions are pinned by commit SHA; the tag is kept in the comment for the next bump.
+name: deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write # the OpenID Connect token the Databricks CLI exchanges for a workspace token
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+env:
+  DATABRICKS_AUTH_TYPE: github-oidc
+  DATABRICKS_CLIENT_ID: ${{ vars.DATABRICKS_CLIENT_ID }}
+  DATABRICKS_HOST: https://dbc-88df4c2c-4033.cloud.databricks.com
+
+jobs:
+  deploy:
+    # The repo is pushed before the onboarding creates the principal and writes the variable, so
+    # that first push is skipped; the onboarding then starts the first deploy itself.
+    if: ${{ vars.DATABRICKS_CLIENT_ID != '' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20 # 30 times a healthy run: the org's repos share Free-plan Actions minutes
+    defaults:
+      run:
+        shell: bash # bash -eo pipefail: a failed sign-in fails the `| jq` step
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      # `bundle deploy` builds the arxiv_curator wheel with `uv build` (databricks.yml, artifacts)
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+      - uses: databricks/setup-cli@9230f12203ef173d0b901846f62a55ce997efef7 # v1.19.0
+        with:
+          version: 1.19.0
+      - run: databricks current-user me --output json | jq '{userName, displayName}'
+      - run: databricks bundle validate -t dev
+      - run: databricks bundle deploy -t dev

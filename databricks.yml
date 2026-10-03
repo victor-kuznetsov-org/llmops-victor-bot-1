@@ -1,0 +1,22 @@
+# Databricks Asset Bundle of llmops-victor-bot-1, shaped like the course's llmops-course-code.
+# See https://docs.databricks.com/dev-tools/bundles/index.html for documentation.
+
+bundle:
+  name: llmops-victor-bot-1
+
+# The course package is built as a wheel and installed in every job environment.
+artifacts:
+  default:
+    type: whl
+    build: uv build
+    path: .
+
+include:
+  - resources/*.yml
+
+# The cohort's workspace, so `databricks bundle validate -t dev` needs no profile to find it.
+targets:
+  dev:
+    default: true
+    workspace:
+      host: https://dbc-88df4c2c-4033.cloud.databricks.com
