@@ -1,0 +1,12 @@
+README.md
+pyproject.toml
+version.txt
+src/arxiv_curator/__init__.py
+src/arxiv_curator/config.py
+src/arxiv_curator/vector_search.py
+src/arxiv_curator.egg-info/PKG-INFO
+src/arxiv_curator.egg-info/SOURCES.txt
+src/arxiv_curator.egg-info/dependency_links.txt
+src/arxiv_curator.egg-info/requires.txt
+src/arxiv_curator.egg-info/top_level.txt
+tests/test_config.py

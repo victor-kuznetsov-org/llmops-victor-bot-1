@@ -1,0 +1,34 @@
+Metadata-Version: 2.4
+Name: arxiv-curator
+Version: 0.0.1
+Summary: Arxiv Curator - llmops-victor-bot-1, the course package for the LLMOps course on Databricks
+Requires-Python: ==3.12.*
+Requires-Dist: cffi==1.17.1
+Requires-Dist: cloudpickle==3.1.1
+Requires-Dist: numpy==2.4.0
+Requires-Dist: pandas==2.3.0
+Requires-Dist: pyarrow==22.0.0
+Requires-Dist: databricks-sdk==0.78.0
+Requires-Dist: pydantic==2.11.7
+Requires-Dist: loguru==0.7.3
+Requires-Dist: python-dotenv==1.1.1
+Requires-Dist: databricks-vectorsearch>=0.63
+Requires-Dist: openai==2.8.0
+Requires-Dist: databricks-mcp==0.4.0
+Requires-Dist: backoff==2.2.1
+Requires-Dist: mlflow==3.8.1
+Requires-Dist: nest-asyncio==1.6.0
+Requires-Dist: arxiv==2.3.1
+Requires-Dist: databricks-agents==1.8.2
+Requires-Dist: pyyaml==6.0.2
+Requires-Dist: ipython>=8.20.0
+Requires-Dist: ipykernel>=6.29.0
+Requires-Dist: jupyter>=1.0.0
+Requires-Dist: notebook>=7.0.0
+Requires-Dist: psycopg>=3.1.0
+Requires-Dist: psycopg-pool>=3.2.0
+Provides-Extra: dev
+Requires-Dist: pip==25.*,>=25.0.1; extra == "dev"
+Requires-Dist: pre-commit==4.*,>=4.1.0; extra == "dev"
+Requires-Dist: pytest==9.*,>=9.1.1; extra == "dev"
+Requires-Dist: jupyterlab>=4.0.0; extra == "dev"
