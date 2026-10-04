@@ -14,3 +14,4 @@ dev:
   vector_search_endpoint: "vs-llmops"
   warehouse_id: "b6a0f7db8a1da913"
   experiment_path: "/Users/victor-bot-1@cauchy.io/llmops"
+  genie_space_id: "01f1c035afa4104284ffa950a1d36fd9"
