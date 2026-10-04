@@ -35,17 +35,21 @@ class VectorSearchManager:
     def create_endpoint_if_not_exists(self) -> None:
         """Create vector search endpoint if it doesn't exist."""
         endpoints_response = self.client.list_endpoints()
-        endpoints = endpoints_response.get('endpoints', []) if isinstance(endpoints_response, dict) else endpoints_response
+        endpoints = (
+            endpoints_response.get("endpoints", [])
+            if isinstance(endpoints_response, dict)
+            else endpoints_response
+        )
         endpoint_exists = any(
-            item.get('name') == self.endpoint_name if isinstance(item, dict) else item.name == self.endpoint_name
+            item.get("name") == self.endpoint_name
+            if isinstance(item, dict)
+            else item.name == self.endpoint_name
             for item in endpoints
         )
 
         if not endpoint_exists:
             print(f"Creating vector search endpoint: {self.endpoint_name}")
-            self.client.create_endpoint_and_wait(
-                name=self.endpoint_name, endpoint_type="STANDARD"
-            )
+            self.client.create_endpoint_and_wait(name=self.endpoint_name, endpoint_type="STANDARD")
             print(f"✓ Vector search endpoint created: {self.endpoint_name}")
         else:
             print(f"✓ Vector search endpoint exists: {self.endpoint_name}")
@@ -59,9 +63,15 @@ class VectorSearchManager:
         self.create_endpoint_if_not_exists()
 
         indexes_response = self.client.list_indexes(self.endpoint_name)
-        indexes = indexes_response.get('vector_indexes', []) if isinstance(indexes_response, dict) else indexes_response
+        indexes = (
+            indexes_response.get("vector_indexes", [])
+            if isinstance(indexes_response, dict)
+            else indexes_response
+        )
         index_exists = any(
-            item.get('name') == self.index_name if isinstance(item, dict) else item.name == self.index_name
+            item.get("name") == self.index_name
+            if isinstance(item, dict)
+            else item.name == self.index_name
             for item in indexes
         )
 
@@ -92,19 +102,14 @@ class VectorSearchManager:
         index.sync()
         print("✓ Index sync triggered")
 
-    def search(
-        self,
-        query: str,
-        num_results: int = 5,
-        filters: dict | None = None
-    ) -> dict:
+    def search(self, query: str, num_results: int = 5, filters: dict | None = None) -> dict:
         """Search the vector index.
-        
+
         Args:
             query: Search query text
             num_results: Number of results to return
             filters: Optional filters to apply
-            
+
         Returns:
             Search results dictionary
         """
@@ -113,6 +118,6 @@ class VectorSearchManager:
             query_text=query,
             columns=["id", "text", "metadata"],
             num_results=num_results,
-            filters=filters
+            filters=filters,
         )
         return results

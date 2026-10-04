@@ -42,14 +42,18 @@ def fixed_size_chunking(text: str, chunk_size: int = 500, overlap: int = 50) -> 
 
 def sentence_chunking(text: str, max_sentences: int = 5) -> list[str]:
     sentences = re.split(r"(?<=[.!?])\s+", text)
-    return [" ".join(sentences[i : i + max_sentences]) for i in range(0, len(sentences), max_sentences)]
+    return [
+        " ".join(sentences[i : i + max_sentences]) for i in range(0, len(sentences), max_sentences)
+    ]
 
 
 # longest chunk, so that the strategies have something to split
 sample_text = chunks_df.orderBy(F.length("text").desc()).select("text").first()["text"]
 fixed = fixed_size_chunking(sample_text)
 sent = sentence_chunking(sample_text)
-print(f"original {len(sample_text)} chars -> fixed {len(fixed)} chunks, sentence {len(sent)} chunks")
+print(
+    f"original {len(sample_text)} chars -> fixed {len(fixed)} chunks, sentence {len(sent)} chunks"
+)
 print(fixed[0][:200])
 print(sent[0][:200])
 

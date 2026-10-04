@@ -40,7 +40,7 @@ def fetch_arxiv_papers(query: str = "cat:cs.AI OR cat:cs.LG", max_results: int =
             "categories": ", ".join(r.categories),
             "pdf_url": r.pdf_url,
             "primary_category": r.primary_category,
-            "ingestion_timestamp": datetime.now().isoformat(),
+            "ingestion_timestamp": datetime.now().isoformat(),  # noqa: DTZ005
             "processed": None,
             "volume_path": None,
         }

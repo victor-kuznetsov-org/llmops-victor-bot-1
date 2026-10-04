@@ -36,7 +36,7 @@ index_name = f"{cfg.catalog}.{cfg.schema}.arxiv_index"
 try:
     index = vsc.get_index(endpoint_name=endpoint, index_name=index_name)
     print("index exists")
-except Exception:
+except Exception:  # noqa: BLE001
     index = vsc.create_delta_sync_index(
         endpoint_name=endpoint,
         source_table_name=f"{cfg.catalog}.{cfg.schema}.arxiv_chunks",
@@ -72,16 +72,24 @@ def show(label, results):
 
 
 q = "attention mechanisms in transformers"
-show("semantic", index.similarity_search(query_text=q, columns=["text", "id", "title"], num_results=3))
+show(
+    "semantic",
+    index.similarity_search(query_text=q, columns=["text", "id", "title"], num_results=3),
+)
 show(
     "filter year=2026",
     index.similarity_search(
-        query_text=q, columns=["text", "id", "title", "year"], filters={"year": "2026"}, num_results=3
+        query_text=q,
+        columns=["text", "id", "title", "year"],
+        filters={"year": "2026"},
+        num_results=3,
     ),
 )
 show(
     "hybrid",
-    index.similarity_search(query_text=q, columns=["text", "id", "title"], num_results=3, query_type="hybrid"),
+    index.similarity_search(
+        query_text=q, columns=["text", "id", "title"], num_results=3, query_type="hybrid"
+    ),
 )
 
 # COMMAND ----------
@@ -97,5 +105,5 @@ try:
             reranker=DatabricksReranker(columns_to_rerank=["text", "title", "summary"]),
         ),
     )
-except Exception as e:
+except Exception as e:  # noqa: BLE001
     print("rerank failed:", repr(e)[:500])

@@ -60,7 +60,7 @@ for row in papers_to_process:
             }
         )
         print("downloaded", paper_id)
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         logger.warning(f"Paper {paper_id} was not successfully processed: {e}")
     time.sleep(3)
 print(len(records), "PDFs uploaded to", pdf_dir)
