@@ -1,4 +1,5 @@
 # Databricks notebook source
+# ruff: noqa: DTZ005, RUF013
 # MAGIC %md
 # MAGIC # Lecture 3.4: Lakebase Memory for Agents
 # MAGIC
@@ -19,7 +20,6 @@ from datetime import datetime
 from uuid import uuid4
 
 from databricks.connect import DatabricksSession
-from pyspark.sql import SparkSession
 from pyspark.sql import types as T
 
 from arxiv_curator.config import load_config
@@ -114,7 +114,7 @@ USING DELTA
 PARTITIONED BY (date)
 """)
 
-print(f"✓ Created conversation_history table")
+print("✓ Created conversation_history table")
 
 # COMMAND ----------
 
@@ -130,7 +130,7 @@ CREATE TABLE IF NOT EXISTS {cfg.catalog}.{cfg.schema}.user_preferences (
 USING DELTA
 """)
 
-print(f"✓ Created user_preferences table")
+print("✓ Created user_preferences table")
 
 # COMMAND ----------
 
@@ -148,7 +148,7 @@ CREATE TABLE IF NOT EXISTS {cfg.catalog}.{cfg.schema}.session_metadata (
 USING DELTA
 """)
 
-print(f"✓ Created session_metadata table")
+print("✓ Created session_metadata table")
 
 # COMMAND ----------
 
@@ -157,12 +157,13 @@ print(f"✓ Created session_metadata table")
 
 # COMMAND ----------
 
+
 class MemoryManager:
     """Manage agent memory using Delta Lake."""
-    
+
     def __init__(self, catalog: str, schema: str):
         """Initialize memory manager.
-        
+
         Args:
             catalog: Unity Catalog name
             schema: Schema name
@@ -170,11 +171,11 @@ class MemoryManager:
         self.catalog = catalog
         self.schema = schema
         self.spark = spark
-        
+
         self.conversation_table = f"{catalog}.{schema}.conversation_history"
         self.preferences_table = f"{catalog}.{schema}.user_preferences"
         self.session_table = f"{catalog}.{schema}.session_metadata"
-    
+
     def save_message(
         self,
         session_id: str,
@@ -182,10 +183,10 @@ class MemoryManager:
         role: str,
         content: str,
         tool_calls: list = None,
-        metadata: dict = None
+        metadata: dict = None,
     ):
         """Save a message to conversation history.
-        
+
         Args:
             session_id: Session identifier
             request_id: Request identifier
@@ -195,45 +196,43 @@ class MemoryManager:
             metadata: Optional metadata
         """
         now = datetime.now()
-        message_data = [{
-            "session_id": session_id,
-            "request_id": request_id,
-            "timestamp": now,
-            "date": now.date(),  # Add date column for partitioning
-            "role": role,
-            "content": content,
-            "tool_calls": json.dumps(tool_calls) if tool_calls else None,
-            "metadata": json.dumps(metadata) if metadata else None
-        }]
-        
+        message_data = [
+            {
+                "session_id": session_id,
+                "request_id": request_id,
+                "timestamp": now,
+                "date": now.date(),  # Add date column for partitioning
+                "role": role,
+                "content": content,
+                "tool_calls": json.dumps(tool_calls) if tool_calls else None,
+                "metadata": json.dumps(metadata) if metadata else None,
+            }
+        ]
+
         # Define schema explicitly to handle None values
-        schema = T.StructType([
-            T.StructField("session_id", T.StringType(), False),
-            T.StructField("request_id", T.StringType(), False),
-            T.StructField("timestamp", T.TimestampType(), False),
-            T.StructField("date", T.DateType(), False),
-            T.StructField("role", T.StringType(), False),
-            T.StructField("content", T.StringType(), False),
-            T.StructField("tool_calls", T.StringType(), True),
-            T.StructField("metadata", T.StringType(), True)
-        ])
-        
-        df = self.spark.createDataFrame(message_data, schema=schema)
-        df.write.format("delta").mode("append").saveAsTable(
-            self.conversation_table
+        schema = T.StructType(
+            [
+                T.StructField("session_id", T.StringType(), False),
+                T.StructField("request_id", T.StringType(), False),
+                T.StructField("timestamp", T.TimestampType(), False),
+                T.StructField("date", T.DateType(), False),
+                T.StructField("role", T.StringType(), False),
+                T.StructField("content", T.StringType(), False),
+                T.StructField("tool_calls", T.StringType(), True),
+                T.StructField("metadata", T.StringType(), True),
+            ]
         )
-    
-    def get_conversation_history(
-        self,
-        session_id: str,
-        limit: int = 10
-    ) -> list[dict]:
+
+        df = self.spark.createDataFrame(message_data, schema=schema)
+        df.write.format("delta").mode("append").saveAsTable(self.conversation_table)
+
+    def get_conversation_history(self, session_id: str, limit: int = 10) -> list[dict]:
         """Retrieve conversation history for a session.
-        
+
         Args:
             session_id: Session identifier
             limit: Maximum number of messages to retrieve
-            
+
         Returns:
             List of message dictionaries
         """
@@ -244,42 +243,39 @@ class MemoryManager:
             ORDER BY timestamp DESC
             LIMIT {limit}
         """)
-        
+
         # Convert to list of dicts (reverse to get chronological order)
         messages = [row.asDict() for row in df.collect()]
         return list(reversed(messages))
-    
-    def save_preference(
-        self,
-        user_id: str,
-        key: str,
-        value: str
-    ):
+
+    def save_preference(self, user_id: str, key: str, value: str):
         """Save or update a user preference.
-        
+
         Args:
             user_id: User identifier
             key: Preference key
             value: Preference value
         """
-        pref_data = [{
-            "user_id": user_id,
-            "preference_key": key,
-            "preference_value": value,
-            "updated_at": datetime.now()
-        }]
-        
+        pref_data = [
+            {
+                "user_id": user_id,
+                "preference_key": key,
+                "preference_value": value,
+                "updated_at": datetime.now(),
+            }
+        ]
+
         df = self.spark.createDataFrame(pref_data)
-        df.write.format("delta").mode("append").option(
-            "mergeSchema", "true"
-        ).saveAsTable(self.preferences_table)
-    
+        df.write.format("delta").mode("append").option("mergeSchema", "true").saveAsTable(
+            self.preferences_table
+        )
+
     def get_preferences(self, user_id: str) -> dict:
         """Get all preferences for a user.
-        
+
         Args:
             user_id: User identifier
-            
+
         Returns:
             Dictionary of preferences
         """
@@ -288,54 +284,48 @@ class MemoryManager:
             FROM {self.preferences_table}
             WHERE user_id = '{user_id}'
         """)
-        
-        return {
-            row.preference_key: row.preference_value
-            for row in df.collect()
-        }
-    
-    def start_session(
-        self,
-        session_id: str,
-        user_id: str = None,
-        metadata: dict = None
-    ):
+
+        return {row.preference_key: row.preference_value for row in df.collect()}
+
+    def start_session(self, session_id: str, user_id: str = None, metadata: dict = None):
         """Start a new session.
-        
+
         Args:
             session_id: Session identifier
             user_id: Optional user identifier
             metadata: Optional session metadata
         """
-        session_data = [{
-            "session_id": session_id,
-            "user_id": user_id,
-            "started_at": datetime.now(),
-            "ended_at": None,
-            "total_messages": 0,
-            "total_tool_calls": 0,
-            "metadata": json.dumps(metadata) if metadata else None
-        }]
-        
+        session_data = [
+            {
+                "session_id": session_id,
+                "user_id": user_id,
+                "started_at": datetime.now(),
+                "ended_at": None,
+                "total_messages": 0,
+                "total_tool_calls": 0,
+                "metadata": json.dumps(metadata) if metadata else None,
+            }
+        ]
+
         # Define schema explicitly to handle None values
-        schema = T.StructType([
-            T.StructField("session_id", T.StringType(), False),
-            T.StructField("user_id", T.StringType(), True),
-            T.StructField("started_at", T.TimestampType(), False),
-            T.StructField("ended_at", T.TimestampType(), True),
-            T.StructField("total_messages", T.IntegerType(), False),
-            T.StructField("total_tool_calls", T.IntegerType(), False),
-            T.StructField("metadata", T.StringType(), True)
-        ])
-        
-        df = self.spark.createDataFrame(session_data, schema=schema)
-        df.write.format("delta").mode("append").saveAsTable(
-            self.session_table
+        schema = T.StructType(
+            [
+                T.StructField("session_id", T.StringType(), False),
+                T.StructField("user_id", T.StringType(), True),
+                T.StructField("started_at", T.TimestampType(), False),
+                T.StructField("ended_at", T.TimestampType(), True),
+                T.StructField("total_messages", T.IntegerType(), False),
+                T.StructField("total_tool_calls", T.IntegerType(), False),
+                T.StructField("metadata", T.StringType(), True),
+            ]
         )
-    
+
+        df = self.spark.createDataFrame(session_data, schema=schema)
+        df.write.format("delta").mode("append").saveAsTable(self.session_table)
+
     def end_session(self, session_id: str):
         """End a session and update statistics.
-        
+
         Args:
             session_id: Session identifier
         """
@@ -347,7 +337,7 @@ class MemoryManager:
             FROM {self.conversation_table}
             WHERE session_id = '{session_id}'
         """).collect()[0]
-        
+
         # Update session
         self.spark.sql(f"""
             UPDATE {self.session_table}
@@ -357,6 +347,7 @@ class MemoryManager:
                 total_tool_calls = {stats.total_tool_calls}
             WHERE session_id = '{session_id}'
         """)
+
 
 # COMMAND ----------
 
@@ -381,7 +372,7 @@ print(f"User ID: {user_id}")
 memory.start_session(
     session_id=session_id,
     user_id=user_id,
-    metadata={"source": "notebook_test", "environment": "dev"}
+    metadata={"source": "notebook_test", "environment": "dev"},
 )
 
 print(f"✓ Started session: {session_id}")
@@ -393,7 +384,7 @@ memory.save_message(
     session_id=session_id,
     request_id=f"req_{uuid4().hex[:8]}",
     role="user",
-    content="What papers discuss transformers?"
+    content="What papers discuss transformers?",
 )
 
 memory.save_message(
@@ -401,14 +392,14 @@ memory.save_message(
     request_id=f"req_{uuid4().hex[:8]}",
     role="assistant",
     content="Here are papers about transformers...",
-    tool_calls=[{"name": "search_papers", "args": {"query": "transformers"}}]
+    tool_calls=[{"name": "search_papers", "args": {"query": "transformers"}}],
 )
 
 memory.save_message(
     session_id=session_id,
     request_id=f"req_{uuid4().hex[:8]}",
     role="user",
-    content="Tell me more about the first one"
+    content="Tell me more about the first one",
 )
 
 print("✓ Saved conversation messages")
@@ -456,17 +447,18 @@ print(f"✓ Ended session: {session_id}")
 
 # COMMAND ----------
 
+
 class MemoryAwareAgent:
     """Agent with memory capabilities."""
-    
+
     def __init__(
         self,
         agent,  # Base agent
         memory_manager: MemoryManager,
-        user_id: str = None
+        user_id: str = None,
     ):
         """Initialize memory-aware agent.
-        
+
         Args:
             agent: Base agent instance
             memory_manager: Memory manager instance
@@ -476,70 +468,60 @@ class MemoryAwareAgent:
         self.memory = memory_manager
         self.user_id = user_id
         self.current_session_id = None
-    
+
     def start_conversation(self, session_id: str = None):
         """Start a new conversation session."""
         self.current_session_id = session_id or f"session_{uuid4().hex[:8]}"
-        self.memory.start_session(
-            session_id=self.current_session_id,
-            user_id=self.user_id
-        )
+        self.memory.start_session(session_id=self.current_session_id, user_id=self.user_id)
         return self.current_session_id
-    
+
     def chat(self, message: str) -> str:
         """Send a message and get response.
-        
+
         Args:
             message: User message
-            
+
         Returns:
             Agent response
         """
         if not self.current_session_id:
             self.start_conversation()
-        
+
         # Save user message
         request_id = f"req_{uuid4().hex[:8]}"
         self.memory.save_message(
-            session_id=self.current_session_id,
-            request_id=request_id,
-            role="user",
-            content=message
+            session_id=self.current_session_id, request_id=request_id, role="user", content=message
         )
-        
+
         # Get conversation history
-        history = self.memory.get_conversation_history(
-            session_id=self.current_session_id,
-            limit=10
-        )
-        
+        history = self.memory.get_conversation_history(session_id=self.current_session_id, limit=10)
+
         # Build messages with history
-        messages = [
-            {"role": msg["role"], "content": msg["content"]}
-            for msg in history
-        ]
-        
+        messages = [{"role": msg["role"], "content": msg["content"]} for msg in history]
+
         # Call agent
         from mlflow.types.responses import ResponsesAgentRequest
+
         request = ResponsesAgentRequest(input=messages)
         response = self.agent.predict(request)
-        
+
         # Save assistant response
         assistant_message = response.output[-1].content
         self.memory.save_message(
             session_id=self.current_session_id,
             request_id=request_id,
             role="assistant",
-            content=assistant_message
+            content=assistant_message,
         )
-        
+
         return assistant_message
-    
+
     def end_conversation(self):
         """End the current conversation."""
         if self.current_session_id:
             self.memory.end_session(self.current_session_id)
             self.current_session_id = None
+
 
 # COMMAND ----------
 
@@ -673,10 +655,11 @@ print("✓ Cleaned up old conversations")
 
 # COMMAND ----------
 
+
 # Delete user data (GDPR compliance example)
 def delete_user_data(user_id: str):
     """Delete all data for a user (GDPR right to be forgotten).
-    
+
     Args:
         user_id: User identifier
     """
@@ -689,20 +672,21 @@ def delete_user_data(user_id: str):
             WHERE user_id = '{user_id}'
         )
     """)
-    
+
     # Delete preferences
     spark.sql(f"""
         DELETE FROM {cfg.catalog}.{cfg.schema}.user_preferences
         WHERE user_id = '{user_id}'
     """)
-    
+
     # Delete sessions
     spark.sql(f"""
         DELETE FROM {cfg.catalog}.{cfg.schema}.session_metadata
         WHERE user_id = '{user_id}'
     """)
-    
+
     print(f"✓ Deleted all data for user: {user_id}")
+
 
 # Example (commented out for safety)
 # delete_user_data("test_user_123")
