@@ -1,13 +1,35 @@
-# Project configuration for the LLMOps course, filled in for victor-bot-1@cauchy.io at onboarding.
+# Project configuration for the LLMOps course, filled in for you at onboarding.
 # Every value below was provisioned for you in the course workspace; you configure nothing.
 
 # Your usage policy: set it on every serverless job, endpoint and app you create.
 usage_policy_id: "2b379ae0-d42c-352c-923a-b63d6ba6bf3e"
 
-# Development environment, the one environment this course uses
+# Development: your own schema in the dev catalog, which you manage and work in.
 dev:
-  catalog: "victor_bot_1"
-  schema: "arxiv"
+  catalog: "llmops_dev"
+  schema: "victor_bot_1"
+  volume: "arxiv_files"
+  llm_endpoint: "course_ops.gateway.chat"
+  embedding_endpoint: "databricks-gte-large-en"
+  vector_search_endpoint: "vs-llmops"
+  warehouse_id: "b6a0f7db8a1da913"
+  experiment_path: "/Users/victor-bot-1@cauchy.io/llmops"
+
+# Acceptance: your schema in the acceptance catalog, written by your deploys; you read it.
+acc:
+  catalog: "llmops_acc"
+  schema: "victor_bot_1"
+  volume: "arxiv_files"
+  llm_endpoint: "course_ops.gateway.chat"
+  embedding_endpoint: "databricks-gte-large-en"
+  vector_search_endpoint: "vs-llmops"
+  warehouse_id: "b6a0f7db8a1da913"
+  experiment_path: "/Users/victor-bot-1@cauchy.io/llmops"
+
+# Production: your schema in the production catalog, written by your deploys; you read it.
+prd:
+  catalog: "llmops_prd"
+  schema: "victor_bot_1"
   volume: "arxiv_files"
   llm_endpoint: "course_ops.gateway.chat"
   embedding_endpoint: "databricks-gte-large-en"

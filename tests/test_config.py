@@ -13,5 +13,5 @@ PROJECT_CONFIG = Path(__file__).resolve().parents[1] / "project_config.yml"
 def test_project_config_loads_for_dev() -> None:
     cfg = ProjectConfig.from_yaml(str(PROJECT_CONFIG), "dev")
 
-    assert cfg.full_volume_path == "victor_bot_1.arxiv.arxiv_files"
+    assert cfg.full_volume_path == "llmops_dev.victor_bot_1.arxiv_files"
     assert cfg.warehouse_id == "b6a0f7db8a1da913"
