@@ -4,7 +4,7 @@
 # MAGIC
 # MAGIC The first job of your course repo. It proves three things on the first deploy: your
 # MAGIC `arxiv_curator` wheel installs on serverless, `project_config.yml` loads, and you can
-# MAGIC write to your own course schema. It appends one row to the table `hello` there.
+# MAGIC write to your own schema. It appends one row to the table `hello` there.
 
 # COMMAND ----------
 

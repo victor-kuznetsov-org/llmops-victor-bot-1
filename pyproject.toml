@@ -32,6 +32,12 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
+    # Runs your lecture code from your laptop on serverless compute (lecture 1). 18.1 is the newest
+    # release that works with databricks-sdk 0.78.0 above; the docs pair it with serverless version 5.
+    "databricks-connect==18.1.*",
+    # Lecture 3.4's session memory (src/arxiv_curator/memory.py) imports psycopg, which needs the
+    # libpq library; a laptop rarely has it, so the laptop gets psycopg's own build of it.
+    "psycopg[binary]>=3.1.0,==3.*",
     "pip>=25.0.1,==25.*",
     "pre-commit>=4.1.0,==4.*",
     "pytest>=9.1.1,==9.*",
@@ -51,3 +57,17 @@ version = { file = "version.txt" }
 
 [tool.ruff]
 line-length = 100
+# Names a Databricks notebook has without importing them.
+builtins = ["display", "spark"]
+
+# The course's lecture notebooks, copied into lecture_1/, lecture_2/ and so on: the pre-commit hooks
+# format them and fix what ruff can when you commit them, and these rules, which they break and
+# ruff cannot fix, are off in those folders only: `except Exception`, which catches everything
+# (BLE001), `datetime.now()` without a time zone (DTZ005), a name defined twice (F811), an
+# optional parameter whose type does not say Optional (RUF013), an if nested where `and` would do
+# (SIM102).
+[tool.ruff.lint.per-file-ignores]
+"**/lecture_[0-9]*/**" = ["BLE001", "DTZ005", "F811", "RUF013", "SIM102"]
+# Two of the course's modules, shipped as the course ships them, break two of those rules too.
+"src/arxiv_curator/agent.py" = ["DTZ005"]
+"src/arxiv_curator/memory.py" = ["BLE001"]

@@ -1,11 +1,19 @@
-# Deploys this repo's bundle to the course workspace on every push to main, as your own deploy
-# principal sp-deploy-victor-bot-1.
+# Deploys this repo's bundle to the course workspace, one job per target (dev, acc, prd), each
+# signed in as that target's own deploy principal through the GitHub environment of the same name.
 #
-# There is no secret anywhere: GitHub gives the run an OpenID Connect token for main of this repo,
-# and Databricks exchanges it for the principal's token, because the principal's federation policy
-# trusts exactly that. DATABRICKS_CLIENT_ID, the principal's application id, is a repository
-# variable the course's onboarding writes; it is not a secret. The hello job runs as the principal,
-# which deployed it, with your usage policy, and you hold CAN_MANAGE on it.
+# There is no secret anywhere: GitHub gives each job an OpenID Connect token for its environment of
+# this repo, and Databricks exchanges it for the principal's token, because the principal's
+# federation policy trusts exactly that environment. The principal's application id is the
+# repository variable DATABRICKS_CLIENT_ID_DEV, _ACC or _PRD, which the course's onboarding writes;
+# it is not a secret. A target whose variable is empty has no principal yet: its job is skipped,
+# and the job "no principal yet" names it. The repo is pushed before any principal exists, so that
+# first push deploys nothing; the onboarding then starts the first deploy of dev itself.
+#
+# - A push to main deploys acc, then prd once you approve it in the prd environment.
+#   Until acc has a principal, a push to main deploys dev instead.
+# - Run the workflow by hand (Actions, deploy, Run workflow) to deploy one target: dev and acc from
+#   any branch, prd from main only (the prd environment allows no other branch).
+# Each job runs as its principal, which deployed it, with your usage policy.
 # Actions are pinned by commit SHA; the tag is kept in the comment for the next bump.
 name: deploy
 
@@ -13,27 +21,55 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      target:
+        description: The bundle target to deploy
+        type: choice
+        options: [dev, acc, prd]
+        default: dev
 
 permissions:
   contents: read
   id-token: write # the OpenID Connect token the Databricks CLI exchanges for a workspace token
 
-concurrency:
-  group: deploy
-  cancel-in-progress: false
-
 env:
   DATABRICKS_AUTH_TYPE: github-oidc
-  DATABRICKS_CLIENT_ID: ${{ vars.DATABRICKS_CLIENT_ID }}
   DATABRICKS_HOST: https://dbc-88df4c2c-4033.cloud.databricks.com
 
 jobs:
-  deploy:
-    # The repo is pushed before the onboarding creates the principal and writes the variable, so
-    # that first push is skipped; the onboarding then starts the first deploy itself.
-    if: ${{ vars.DATABRICKS_CLIENT_ID != '' }}
+  # Runs only while a target has no principal, and names it: that target's job is skipped.
+  no-principal-yet:
+    name: no principal yet
+    if: >-
+      ${{ vars.DATABRICKS_CLIENT_ID_DEV == '' || vars.DATABRICKS_CLIENT_ID_ACC == '' ||
+        vars.DATABRICKS_CLIENT_ID_PRD == '' }}
     runs-on: ubuntu-latest
-    timeout-minutes: 20 # 30 times a healthy run: the org's repos share Free-plan Actions minutes
+    timeout-minutes: 20
+    steps:
+      - name: Name the targets without a principal
+        env:
+          DEV: ${{ vars.DATABRICKS_CLIENT_ID_DEV }}
+          ACC: ${{ vars.DATABRICKS_CLIENT_ID_ACC }}
+          PRD: ${{ vars.DATABRICKS_CLIENT_ID_PRD }}
+        run: |
+          if [ -z "$DEV" ]; then echo "::notice title=dev::no principal yet, the dev job is skipped"; fi
+          if [ -z "$ACC" ]; then echo "::notice title=acc::no principal yet, the acc job is skipped"; fi
+          if [ -z "$PRD" ]; then echo "::notice title=prd::no principal yet, the prd job is skipped"; fi
+
+  dev:
+    if: >-
+      ${{ vars.DATABRICKS_CLIENT_ID_DEV != '' && (
+        (github.event_name == 'workflow_dispatch' && inputs.target == 'dev') ||
+        (github.event_name == 'push' && vars.DATABRICKS_CLIENT_ID_ACC == '')
+      ) }}
+    environment: dev
+    concurrency:
+      group: deploy-dev
+      cancel-in-progress: false
+    runs-on: ubuntu-latest
+    timeout-minutes: 20 # 30 times a healthy run
+    env:
+      DATABRICKS_CLIENT_ID: ${{ vars.DATABRICKS_CLIENT_ID_DEV }}
     defaults:
       run:
         shell: bash # bash -eo pipefail: a failed sign-in fails the `| jq` step
@@ -47,3 +83,60 @@ jobs:
       - run: databricks current-user me --output json | jq '{userName, displayName}'
       - run: databricks bundle validate -t dev
       - run: databricks bundle deploy -t dev
+
+  acc:
+    if: >-
+      ${{ vars.DATABRICKS_CLIENT_ID_ACC != '' && (
+        github.event_name == 'push' ||
+        (github.event_name == 'workflow_dispatch' && inputs.target == 'acc')
+      ) }}
+    environment: acc
+    concurrency:
+      group: deploy-acc
+      cancel-in-progress: false
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      DATABRICKS_CLIENT_ID: ${{ vars.DATABRICKS_CLIENT_ID_ACC }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+      - uses: databricks/setup-cli@9230f12203ef173d0b901846f62a55ce997efef7 # v1.19.0
+        with:
+          version: 1.19.0
+      - run: databricks current-user me --output json | jq '{userName, displayName}'
+      - run: databricks bundle validate -t acc
+      - run: databricks bundle deploy -t acc
+
+  # After acc on a push, and only once you approve it: the prd environment names you as its
+  # required reviewer. `!cancelled()` lets a dispatch of prd run while acc is skipped.
+  prd:
+    needs: acc
+    if: >-
+      ${{ !cancelled() && vars.DATABRICKS_CLIENT_ID_PRD != '' && (
+        (github.event_name == 'push' && needs.acc.result == 'success') ||
+        (github.event_name == 'workflow_dispatch' && inputs.target == 'prd')
+      ) }}
+    environment: prd
+    concurrency:
+      group: deploy-prd
+      cancel-in-progress: false
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      DATABRICKS_CLIENT_ID: ${{ vars.DATABRICKS_CLIENT_ID_PRD }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+      - uses: databricks/setup-cli@9230f12203ef173d0b901846f62a55ce997efef7 # v1.19.0
+        with:
+          version: 1.19.0
+      - run: databricks current-user me --output json | jq '{userName, displayName}'
+      - run: databricks bundle validate -t prd
+      - run: databricks bundle deploy -t prd

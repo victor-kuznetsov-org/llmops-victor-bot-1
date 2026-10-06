@@ -1,5 +1,6 @@
 """Configuration management for Arxiv Curator."""
 
+import os
 from pathlib import Path
 
 import yaml
@@ -84,3 +85,12 @@ def load_config(config_path: str = "project_config.yml", env: str = "dev") -> Pr
             current = current.parent
 
     return ProjectConfig.from_yaml(config_path, env)
+
+
+def get_env() -> str:
+    """Get current environment from environment variable.
+
+    Returns:
+        Environment name (dev, acc, or prd)
+    """
+    return os.getenv("ENV", "dev")
