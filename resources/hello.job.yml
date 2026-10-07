@@ -2,7 +2,9 @@
 # loads project_config.yml and writes one row to the hello table in your schema of the target's
 # catalog (dev: llmops_dev.victor_bot_1).
 # It runs as whoever deploys the bundle; the target's deploy principal does that from GitHub
-# Actions. Its name ends with the target, so the three deployments never collide.
+# Actions. Its name ends with the target, so the three deployments never collide. The course's
+# onboarding gives you CAN_MANAGE on the dev job and CAN_VIEW on the acc and prd jobs once they are
+# deployed, so this public file names nobody.
 resources:
   jobs:
     hello:
@@ -22,8 +24,3 @@ resources:
             notebook_path: deployment_notebooks/hello.py
             base_parameters:
               env: ${bundle.target}
-
-      # CAN_MANAGE in dev, CAN_VIEW in acc and prd (databricks.yml, student_job_permission).
-      permissions:
-        - level: ${var.student_job_permission}
-          user_name: "victor-bot-1@cauchy.io"

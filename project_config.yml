@@ -13,7 +13,10 @@ dev:
   embedding_endpoint: "databricks-gte-large-en"
   vector_search_endpoint: "vs-llmops"
   warehouse_id: "b6a0f7db8a1da913"
-  experiment_path: "/Users/victor-bot-1@cauchy.io/llmops"
+  experiment_path: "/llmops/victor_bot_1"
+  # The cohort's Lakebase instance of dev and your own database on it, for pgvector and memory.
+  lakebase_instance: "lb-llmops-dev"
+  lakebase_database: "victor_bot_1"
 
 # Acceptance: your schema in the acceptance catalog, written by your deploys; you read it.
 acc:
@@ -24,7 +27,10 @@ acc:
   embedding_endpoint: "databricks-gte-large-en"
   vector_search_endpoint: "vs-llmops"
   warehouse_id: "b6a0f7db8a1da913"
-  experiment_path: "/Users/victor-bot-1@cauchy.io/llmops"
+  experiment_path: "/llmops/victor_bot_1"
+  # The acceptance instance and your database on it, written by your deploys; you read it.
+  lakebase_instance: "lb-llmops-acc"
+  lakebase_database: "victor_bot_1"
 
 # Production: your schema in the production catalog, written by your deploys; you read it.
 prd:
@@ -35,4 +41,7 @@ prd:
   embedding_endpoint: "databricks-gte-large-en"
   vector_search_endpoint: "vs-llmops"
   warehouse_id: "b6a0f7db8a1da913"
-  experiment_path: "/Users/victor-bot-1@cauchy.io/llmops"
+  experiment_path: "/llmops/victor_bot_1"
+  # The production instance and your database on it, written by your deploys; you read it.
+  lakebase_instance: "lb-llmops-prd"
+  lakebase_database: "victor_bot_1"
