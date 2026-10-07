@@ -11,11 +11,6 @@ artifacts:
     build: uv build
     path: .
 
-variables:
-  student_job_permission:
-    description: What you hold on the jobs of a target; you only read acceptance and production
-    default: CAN_MANAGE
-
 include:
   - resources/*.yml
 
@@ -38,13 +33,9 @@ targets:
     workspace:
       host: https://dbc-88df4c2c-4033.cloud.databricks.com
       root_path: /Workspace/Users/${workspace.current_user.userName}/.bundle/${bundle.target}/${bundle.name}
-    variables:
-      student_job_permission: CAN_VIEW
 
   # Production: deployed after acceptance, once you approve it.
   prd:
     workspace:
       host: https://dbc-88df4c2c-4033.cloud.databricks.com
       root_path: /Workspace/Users/${workspace.current_user.userName}/.bundle/${bundle.target}/${bundle.name}
-    variables:
-      student_job_permission: CAN_VIEW
